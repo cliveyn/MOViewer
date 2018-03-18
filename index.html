@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Simple markers</title>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <input type='file' onchange='readTrajetories(event)'>
+    <input type='button' value = 'ws_start' onClick='ws_start()'>
+    <input type='button' value = 'ws_stop' onClick='ws_stop()'>
+    <div id="map"></div>
+    <script>
+      var map;
+      var ws; 
+      var allMarkers = {};
+      var allPolylines = {};
+
+      function initMap() {
+        var initLatLng = {lat: 37.5192261, lng: 126.9679702};
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 12,
+          center: initLatLng
+        });
+        addMarker("1",initLatLng);
+      }
+
+      function addMarker(id, latlon){
+        var marker = new google.maps.Marker({
+          position: latlon,
+          icon: {
+            url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Blue_circle_for_diabetes.svg/2000px-Blue_circle_for_diabetes.svg.png',
+            scaledSize: new google.maps.Size(20,20)
+          },
+          label:id,
+          map: map
+        });
+        return marker;  
+      }
+
+      function updateMarker(id, latlon){
+        allMarkers[id][0].setPosition(latlon);
+      }
+
+      function updatePolyline(id, latlon){
+        var paths = allPolylines[id].getPath();
+        paths.push(latlon);
+      }
+
+
+      function readTrajetories(event){
+        var file = event.target.files[0];
+        var reader = new FileReader();
+        reader.onload = function(){
+          var lines = this.result.split('\n');
+          for(var idx = 0; idx <100; idx++){
+            var line = lines[idx];
+            console.log(line);
+            var elements = line.split(',');
+            var id = elements[0];
+            if(!allMarkers.hasOwnProperty(id)){
+              allMarkers[id] = [];
+
+            }
+            var marker = addMarker(id, {lat:parseFloat(elements[1]),lng:parseFloat(elements[2])});
+            allMarkers[id].push(marker)       
+          }
+        }
+        reader.readAsText(file);
+      }
+
+      function ws_start(){
+        ws = new WebSocket("ws://143.248.91.29:5678/");
+        ws.onmessage = function (event) {
+          console.log(event.data);
+          var elements = event.data.split(',');
+          var id = elements[0];
+          var lat = parseFloat(elements[1]);
+          var lng = parseFloat(elements[2]);
+
+          if(allMarkers.hasOwnProperty(id)){
+            var prev_lat = allMarkers[id][0].getPosition().lat();
+            var prev_lng = allMarkers[id][0].getPosition().lng();
+            if(Math.abs(prev_lat-lat) >=1 | Math.abs(prev_lng-lng) >=1) return;
+
+            updateMarker(id,{lat:lat,lng:lng})
+            updatePolyline(id, new google.maps.LatLng(lat,lng));
+          }else{
+            allMarkers[id] = [];
+            var marker = addMarker(id, {lat:lat,lng:lng});
+            allMarkers[id].push(marker)
+
+            allPolylines[id] = new google.maps.Polyline({
+              path: [{lat:lat,lng:lng}],
+              geodesic: true,
+              strokeColor: '#FF0000',
+              strokeOpacity: 1.0,
+              strokeWeight: 1,
+              map: map
+            });
+          }
+        };
+      }
+
+      function ws_stop(){
+        ws.close();
+      }
+
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDqKvaqFzBsn561VmMCgjkkm6stI87Z3jM&callback=initMap">
+    </script>
+  </body>
+</html>
