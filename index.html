@@ -22,12 +22,14 @@
     <input type='file' onchange='readTrajetories(event)'>
     <input type='button' value = 'ws_start' onClick='ws_start()'>
     <input type='button' value = 'ws_stop' onClick='ws_stop()'>
+    <input type='text' id='timestamp'>
     <div id="map"></div>
     <script>
       var map;
       var ws; 
       var allMarkers = {};
       var allPolylines = {};
+      var timestamp_text=document.getElementById('timestamp');
 
       function initMap() {
         var initLatLng = {lat: 37.5192261, lng: 126.9679702};
@@ -90,11 +92,12 @@
           var id = elements[0];
           var lat = parseFloat(elements[1]);
           var lng = parseFloat(elements[2]);
+	  var timestamp = elements[3];
 
           if(allMarkers.hasOwnProperty(id)){
             var prev_lat = allMarkers[id][0].getPosition().lat();
             var prev_lng = allMarkers[id][0].getPosition().lng();
-            if(Math.abs(prev_lat-lat) >=1 | Math.abs(prev_lng-lng) >=1) return;
+            if(Math.abs(prev_lat-lat) >=0.5 | Math.abs(prev_lng-lng) >=0.5) return;
 
             updateMarker(id,{lat:lat,lng:lng})
             updatePolyline(id, new google.maps.LatLng(lat,lng));
@@ -112,6 +115,7 @@
               map: map
             });
           }
+	   timestamp_text.value=timestamp;
         };
       }
 
