@@ -22,7 +22,10 @@
     <input type='file' onchange='readTrajetories(event)'>
     <input type='button' value = 'ws_start' onClick='ws_start()'>
     <input type='button' value = 'ws_stop' onClick='ws_stop()'>
-    <input type='text' id='timestamp'>
+    <input type='text' id='timestamp' size = 10>
+    <input type='button' value = 'hide_markers' onClick='hide_markers()'>
+    <input type='button' value = 'show_markers' onClick='show_markers()'>
+
     <div id="map"></div>
     <script>
       var map;
@@ -44,8 +47,10 @@
         var marker = new google.maps.Marker({
           position: latlon,
           icon: {
-            url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Blue_circle_for_diabetes.svg/2000px-Blue_circle_for_diabetes.svg.png',
-            scaledSize: new google.maps.Size(20,20)
+            //url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Blue_circle_for_diabetes.svg/2000px-Blue_circle_for_diabetes.svg.png',
+           	url: 'http://icons.iconarchive.com/icons/martin-berube/flat-animal/256/squirrel-icon.png', 
+		scaledSize: new google.maps.Size(40,40),
+		labelOrigin: new google.maps.Point(20,0)
           },
           label:id,
           map: map
@@ -56,6 +61,19 @@
       function updateMarker(id, latlon){
         allMarkers[id][0].setPosition(latlon);
       }
+
+      function hide_markers(){
+	Object.keys(allMarkers).forEach(function(key) {
+    		allMarkers[key][0].setMap(null)
+	});
+      }
+	
+      function show_markers(){
+	Object.keys(allMarkers).forEach(function(key) {
+	    allMarkers[key][0].setMap(map)
+	});
+      }
+
 
       function updatePolyline(id, latlon){
         var paths = allPolylines[id].getPath();
@@ -85,7 +103,11 @@
       }
 
       function ws_start(){
-        ws = new WebSocket("ws://143.248.91.29:5678/");
+        if(typeof ws!=="undefined" && ws.readyState==ws.OPEN){
+		alert('It is already opened');
+		return;
+	}	
+	ws = new WebSocket("ws://143.248.91.29:5678/");
         ws.onmessage = function (event) {
           console.log(event.data);
           var elements = event.data.split(',');
@@ -97,7 +119,7 @@
           if(allMarkers.hasOwnProperty(id)){
             var prev_lat = allMarkers[id][0].getPosition().lat();
             var prev_lng = allMarkers[id][0].getPosition().lng();
-            if(Math.abs(prev_lat-lat) >=0.5 | Math.abs(prev_lng-lng) >=0.5) return;
+            if(Math.abs(prev_lat-lat) >=0.1 | Math.abs(prev_lng-lng) >=0.1) return;
 
             updateMarker(id,{lat:lat,lng:lng})
             updatePolyline(id, new google.maps.LatLng(lat,lng));
