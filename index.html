@@ -19,7 +19,9 @@
     </style>
   </head>
   <body>
+    # Batch: 
     <input type='file' onchange='readTrajetories(event)'>
+    # Streaming: 
     <input type='button' value = 'ws_start' onClick='ws_start()'>
     <input type='button' value = 'ws_stop' onClick='ws_stop()'>
     <input type='text' id='timestamp' size = 10>
@@ -47,7 +49,6 @@
         var marker = new google.maps.Marker({
           position: latlon,
           icon: {
-            //url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Blue_circle_for_diabetes.svg/2000px-Blue_circle_for_diabetes.svg.png',
            	url: 'http://icons.iconarchive.com/icons/martin-berube/flat-animal/256/squirrel-icon.png', 
 		scaledSize: new google.maps.Size(40,40),
 		labelOrigin: new google.maps.Point(20,0)
@@ -91,12 +92,24 @@
             console.log(line);
             var elements = line.split(',');
             var id = elements[0];
+            var lat = parseFloat(elements[1]);
+            var lng = parseFloat(elements[2]);
+
             if(!allMarkers.hasOwnProperty(id)){
               allMarkers[id] = [];
 
+              allPolylines[id] = new google.maps.Polyline({
+                path: [],
+                geodesic: true,
+                strokeColor: '#FF0000',
+                strokeOpacity: 1.0,
+                strokeWeight: 1,
+                map: map
+              });
             }
-            var marker = addMarker(id, {lat:parseFloat(elements[1]),lng:parseFloat(elements[2])});
-            allMarkers[id].push(marker)       
+            var marker = addMarker(id, new google.maps.LatLng(lat,lng));
+            allMarkers[id].push(marker);
+            updatePolyline(id, new google.maps.LatLng(lat,lng));
           }
         }
         reader.readAsText(file);
@@ -107,7 +120,7 @@
 		alert('It is already opened');
 		return;
 	}	
-	ws = new WebSocket("ws://143.248.91.29:5678/");
+	ws = new WebSocket("ws://dmserver7.kaist.ac.kr:5678/");
         ws.onmessage = function (event) {
           console.log(event.data);
           var elements = event.data.split(',');
