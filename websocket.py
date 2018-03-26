@@ -1,8 +1,5 @@
 import asyncio
-import datetime
-import random
 import websockets
-import pandas as pd
 import sys
 import csv
 
